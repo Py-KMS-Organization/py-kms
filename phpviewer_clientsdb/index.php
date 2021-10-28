@@ -47,7 +47,7 @@ foreach ($dbh->query($sql) as $row) {
 	<tr bgcolor=silver>
 		<td colspan=5><b>Total request count:</b></td>
 <?php		
-		echo "	<td>$requestCount</td>\n";
+	echo "	<td>$requestCount</td>\n";
 ?>
 	</tr>
 </table>
