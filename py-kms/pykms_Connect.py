@@ -10,6 +10,9 @@ def has_dualstack_ipv6():
         """ Return True if the platform supports creating a SOCK_STREAM socket
             which can handle both AF_INET and AF_INET6 (IPv4 / IPv6) connections.
         """
+        # Always disabled reuse_port for Windows
+        if os.name in ('nt'):
+                reuse_port = False        
         if not socket.has_ipv6 or not hasattr(socket._socket, 'IPPROTO_IPV6') or not hasattr(socket._socket, 'IPV6_V6ONLY'):
                 return False
         try:
