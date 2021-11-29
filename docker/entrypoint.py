@@ -28,8 +28,8 @@ def change_uid_grp():
   user_grp_db_entries = grp.getgrnam("power_users")
   uid = int(user_db_entries.pw_uid)
   gid = int(user_grp_db_entries.gr_gid)
-  new_gid = int(os.getenv('GID', str(gid)))
-  new_uid = int(os.getenv('UID', str(uid)))
+  new_uid = os.getuid()
+  new_gid = os.getgid()
   os.chown("/home/py-kms", new_uid, new_gid)
   os.chown("/usr/bin/start.py", new_uid, new_gid)
   if os.path.isfile(dbPath):
