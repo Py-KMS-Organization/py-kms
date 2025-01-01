@@ -103,10 +103,22 @@
 			<Activate KmsItem="7ba0bf23-d0f5-4072-91d9-d55af5a481b6" />
 		</CsvlkItem>
 
-		<CsvlkItem DisplayName="Windows Server 2022" VlmcsdIndex="0" GroupId="206" MinKeyId="551000000" MaxKeyId="570999999" IniFileName="Windows" EPid="06401-00206-566-174993-03-1033-9600.0000-2802018" Id="ef6cfc9f-8c5d-44ac-9aad-de6a2ea0ae03" InvalidWinBuild="[0,1,2]">
+		<CsvlkItem DisplayName="Windows Server 2025 Datacenter" VlmcsdIndex="0" GroupId="206" MinKeyId="551000000" MaxKeyId="570999999" IniFileName="Windows" Id="c052f164-cdf6-409a-a0cb-853ba0f0f55a" InvalidWinBuild="[0,1,2]">
+			<Activate KmsItem="c052f164-cdf6-409a-a0cb-853ba0f0f55a" />
+		</CsvlkItem>
+
+		<CsvlkItem DisplayName="Windows Server 2025 Standard" VlmcsdIndex="0" GroupId="206" MinKeyId="551000000" MaxKeyId="570999999" IniFileName="Windows" Id="7dc26449-db21-4e09-ba37-28f2958506a6" InvalidWinBuild="[0,1,2]">
+			<Activate KmsItem="7dc26449-db21-4e09-ba37-28f2958506a6" />
+		</CsvlkItem>
+		
+		<CsvlkItem DisplayName="Windows Server 2022 Datacenter" VlmcsdIndex="0" GroupId="206" MinKeyId="551000000" MaxKeyId="570999999" IniFileName="Windows" Id="ef6cfc9f-8c5d-44ac-9aad-de6a2ea0ae03" InvalidWinBuild="[0,1,2]">
 			<Activate KmsItem="ef6cfc9f-8c5d-44ac-9aad-de6a2ea0ae03" />
 		</CsvlkItem>
 
+		<CsvlkItem DisplayName="Windows Server 2022 Standard" VlmcsdIndex="0" GroupId="206" MinKeyId="551000000" MaxKeyId="570999999" IniFileName="Windows" Id="de32eafd-aaee-4662-9444-c1befb41bde2" InvalidWinBuild="[0,1,2]">
+			<Activate KmsItem="de32eafd-aaee-4662-9444-c1befb41bde2" />
+		</CsvlkItem>
+		
 		<CsvlkItem DisplayName="Windows Server 2019" VlmcsdIndex="0" GroupId="206" MinKeyId="551000000" MaxKeyId="570999999" IniFileName="Windows" EPid="06401-00206-566-174993-03-1033-9600.0000-2802018" Id="2e7a9ad1-a849-4b56-babe-17d5a29fe4b4" InvalidWinBuild="[0,1,2]">
 			<Activate KmsItem="58e2134f-8e11-4d17-9cb2-91069c151148" />
 			<Activate KmsItem="7fde5219-fbfa-484a-82c9-34d1ad53e856" />
@@ -568,11 +580,22 @@
 
 		<AppItem DisplayName="Windows" VlmcsdIndex="0" Id="55c92734-d682-4d71-983e-d6ec3f16059f" MinActiveClients="50">
 
-			<KmsItem DisplayName="Windows Server 2022" Id="ef6cfc9f-8c5d-44ac-9aad-de6a2ea0ae03" DefaultKmsProtocol="6.0" NCountPolicy="5">
-				<SkuItem DisplayName="Windows Server 2022 Datacenter" Id="ef6cfc9f-8c5d-44ac-9aad-de6a2ea0ae03" Gvlk="WX4NM-KYWYW-QJJR4-XV3QB-6VM33" />
-				<SkuItem DisplayName="Windows Server 2022 Standard" Id="de32eafd-aaee-4662-9444-c1befb41bde2" Gvlk="VDYBN-27WPP-V4HQT-9VMD4-VMK7H" />
+			<KmsItem DisplayName="Windows Server 2025 Datacenter" Id="c052f164-cdf6-409a-a0cb-853ba0f0f55a" DefaultKmsProtocol="6.0" NCountPolicy="5">
+				<SkuItem DisplayName="Windows Server 2025 Datacenter" Id="c052f164-cdf6-409a-a0cb-853ba0f0f55a" Gvlk="D764K-2NDRG-47T6Q-P8T8W-YP6DF" />
 			</KmsItem>
 
+			<KmsItem DisplayName="Windows Server 2025 Standard" Id="7dc26449-db21-4e09-ba37-28f2958506a6" DefaultKmsProtocol="6.0" NCountPolicy="5">
+				<SkuItem DisplayName="Windows Server 2025 Standard" Id="7dc26449-db21-4e09-ba37-28f2958506a6" Gvlk="TVRH6-WHNXV-R9WG3-9XRFY-MY832" />
+			</KmsItem>			
+			
+			<KmsItem DisplayName="Windows Server 2022 Datacenter" Id="ef6cfc9f-8c5d-44ac-9aad-de6a2ea0ae03" DefaultKmsProtocol="6.0" NCountPolicy="5">
+				<SkuItem DisplayName="Windows Server 2022 Datacenter" Id="ef6cfc9f-8c5d-44ac-9aad-de6a2ea0ae03" Gvlk="WX4NM-KYWYW-QJJR4-XV3QB-6VM33" />
+			</KmsItem>
+
+			<KmsItem DisplayName="Windows Server 2022 Standard" Id="de32eafd-aaee-4662-9444-c1befb41bde2" DefaultKmsProtocol="6.0" NCountPolicy="5">
+				<SkuItem DisplayName="Windows Server 2022 Standard" Id="de32eafd-aaee-4662-9444-c1befb41bde2" Gvlk="VDYBN-27WPP-V4HQT-9VMD4-VMK7H" />
+			</KmsItem>			
+			
 			<KmsItem DisplayName="Windows Server 2019" Id="8449b1fb-f0ea-497a-99ab-66ca96e9a0f5" DefaultKmsProtocol="6.0" NCountPolicy="5">
 				<SkuItem DisplayName="Windows Server 2019 ARM64" Id="8de8eb62-bbe0-40ac-ac17-f75595071ea3" Gvlk="GRFBW-QNDC4-6QBHG-CCK3B-2PR88" />
 				<SkuItem DisplayName="Windows Server 2019 Azure Core" Id="a99cc1f0-7719-4306-9645-294102fbff95" Gvlk="FDNH6-VW9RW-BXPJ7-4XTYG-239TB" />
