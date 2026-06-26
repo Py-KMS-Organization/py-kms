@@ -427,7 +427,7 @@ def kms_parser_check_optionals(userarg, zeroarg, onearg, msg = 'optional py-kms 
                         except IndexError:
                                 pass
 
-                        if elem and elem not in allarg:
+                        if elem and elem.startswith('-') and elem not in allarg:
                                 raise KmsParserException("%s argument `" %msg + found + "`:" + " expected " + num + " unrecognized: '%s'" %elem)
 
 def kms_parser_check_positionals(config, parse_method, arguments = [], force_parse = False, msg = 'positional py-kms server'):
