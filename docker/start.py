@@ -27,6 +27,16 @@ listen_port = os.environ.get('PORT', '1688')
 want_webui = os.environ.get('WEBUI', '0') == '1' # if the variable is not provided, we assume the user does not want the webui
 
 def start_kms(logger):
+  # Set up Prometheus multiprocess directory for both KMS Server and WebUI
+  # This must be done BEFORE starting any process that writes metrics
+  prometheus_multiproc_dir = '/tmp/prometheus_multiproc'
+  if not os.path.exists(prometheus_multiproc_dir):
+    os.makedirs(prometheus_multiproc_dir, exist_ok=True)
+  # Set environment variables for this process and all child processes
+  os.environ['PROMETHEUS_MULTIPROC_DIR'] = prometheus_multiproc_dir
+  os.environ['prometheus_multiproc_dir'] = prometheus_multiproc_dir
+  logger.info(f"Prometheus multiprocess directory: {prometheus_multiproc_dir}")
+  
   # Make sure the full path to the db exists
   if want_webui and not os.path.exists(os.path.dirname(db_path)):
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
@@ -61,7 +71,15 @@ def start_kms(logger):
       pykms_webui_env['PORT'] = '8080'
       pykms_webui_env['PYKMS_LICENSE_PATH'] = '/LICENSE'
       pykms_webui_env['PYKMS_VERSION_PATH'] = '/VERSION'
-      pykms_webui_process = subprocess.Popen(['gunicorn', '--log-level', os.environ.get('LOGLEVEL'), 'pykms_WebUI:app'], env=pykms_webui_env)
+      # Set up Prometheus multiprocess mode (for Gunicorn workers)
+      prometheus_multiproc_dir = '/tmp/prometheus_multiproc'
+      if not os.path.exists(prometheus_multiproc_dir):
+        os.makedirs(prometheus_multiproc_dir, exist_ok=True)
+      # Set both uppercase and lowercase variants for compatibility with different prometheus_client versions
+      pykms_webui_env['PROMETHEUS_MULTIPROC_DIR'] = prometheus_multiproc_dir
+      pykms_webui_env['prometheus_multiproc_dir'] = prometheus_multiproc_dir
+
+      pykms_webui_process = subprocess.Popen(['gunicorn', '--config', 'gunicorn_config.py', 'pykms_WebUI:app'], env=pykms_webui_env)
   except Exception as e:
     logger.error("Failed to start webui (ignoring and continuing anyways): %s" % e)
 

@@ -1,5 +1,5 @@
-import os, uuid, datetime
-from flask import Flask, render_template
+import os, uuid, datetime, sys
+from flask import Flask, render_template, Response
 from pykms_Sql import sql_get_all
 from pykms_DB2Dict import kmsDB2Dict
 
@@ -57,6 +57,21 @@ if os.path.exists(_version_info_path):
             'hash': f.readline().strip(),
             'reference': f.readline().strip()
         }
+
+# Initialize Prometheus metrics
+try:
+    import pykms_Metrics
+    if pykms_Metrics.METRICS_ENABLED:
+        version_str = 'unknown'
+        if app.jinja_env.globals['version_info']:
+            version_str = app.jinja_env.globals['version_info'].get('reference', 'unknown')
+        python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        pykms_Metrics.initialize_metrics(version_str, python_version)
+except ImportError:
+    pass  # Metrics module not available
+except Exception as e:
+    import logging
+    logging.getLogger('pykms_webui').warning(f"Failed to initialize metrics: {e}")
 
 _dbEnvVarName = 'PYKMS_SQLITE_DB_PATH'
 def _env_check():
@@ -139,4 +154,30 @@ def products():
         count_products_windows=countProductsWindows,
         count_products_office=countProductsOffice
     )
+
+@app.route('/metrics')
+def metrics():
+    """Prometheus metrics endpoint."""
+    try:
+        import pykms_Metrics
+        if not pykms_Metrics.METRICS_ENABLED:
+            return 'Metrics disabled', 503
+        
+        # Update database metrics
+        dbPath = os.environ.get(_dbEnvVarName)
+        if dbPath:
+            try:
+                clients = sql_get_all(dbPath)
+                pykms_Metrics.update_database_metrics(dbPath, clients)
+            except Exception as e:
+                pass  # Ignore errors when updating database metrics
+        
+        # Generate and return metrics
+        content_type, metrics_data = pykms_Metrics.get_metrics_output()
+        return Response(metrics_data, mimetype=content_type)
+    except ImportError:
+        return 'Metrics module not available', 503
+    except Exception as e:
+        return f'Error generating metrics: {e}', 500
+
     

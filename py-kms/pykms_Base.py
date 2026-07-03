@@ -11,6 +11,7 @@ from pykms_PidGenerator import epidGenerator
 from pykms_Filetimes import filetime_to_dt
 from pykms_Sql import sql_update, sql_update_epid
 from pykms_Format import justify, byterize, enco, deco, pretty_printer
+from pykms_Metrics import record_activation_request, get_product_type, get_kms_version, get_sku_label
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -216,6 +217,10 @@ could be detected as not genuine !{end}" %currentClientCount)
                 if self.srv_config['sqlite']:
                         sql_update(self.srv_config['sqlite'], infoDict)
 
+                # Store app and SKU names for metrics (temporary storage)
+                self.srv_config['_metrics_app_name'] = appName
+                self.srv_config['_metrics_sku_name'] = skuName
+
                 return self.createKmsResponse(kmsRequest, currentClientCount, appName)
 
         def createKmsResponse(self, kmsRequest, currentClientCount, appName):
@@ -248,20 +253,54 @@ could be detected as not genuine !{end}" %currentClientCount)
 import pykms_RequestV4, pykms_RequestV5, pykms_RequestV6, pykms_RequestUnknown
 
 def generateKmsResponseData(data, srv_config):
-        version = kmsBase.GenericRequestHeader(data)['versionMajor']
-        currentDate = time.strftime("%a %b %d %H:%M:%S %Y")
+	version = kmsBase.GenericRequestHeader(data)['versionMajor']
+	currentDate = time.strftime("%a %b %d %H:%M:%S %Y")
 
-        if version == 4:
-                loggersrv.info("Received V%d request on %s." % (version, currentDate))
-                messagehandler = pykms_RequestV4.kmsRequestV4(data, srv_config)     
-        elif version == 5:
-                loggersrv.info("Received V%d request on %s." % (version, currentDate))
-                messagehandler = pykms_RequestV5.kmsRequestV5(data, srv_config)
-        elif version == 6:
-                loggersrv.info("Received V%d request on %s." % (version, currentDate))
-                messagehandler = pykms_RequestV6.kmsRequestV6(data, srv_config)
-        else:
-                loggersrv.info("Unhandled KMS version V%d." % version)
-                messagehandler = pykms_RequestUnknown.kmsRequestUnknown(data, srv_config)
-                
-        return messagehandler.executeRequestLogic()
+	if version == 4:
+		loggersrv.info("Received V%d request on %s." % (version, currentDate))
+		messagehandler = pykms_RequestV4.kmsRequestV4(data, srv_config)	
+	elif version == 5:
+		loggersrv.info("Received V%d request on %s." % (version, currentDate))
+		messagehandler = pykms_RequestV5.kmsRequestV5(data, srv_config)
+	elif version == 6:
+		loggersrv.info("Received V%d request on %s." % (version, currentDate))
+		messagehandler = pykms_RequestV6.kmsRequestV6(data, srv_config)
+	else:
+		loggersrv.info("Unhandled KMS version V%d." % version)
+		messagehandler = pykms_RequestUnknown.kmsRequestUnknown(data, srv_config)
+	
+	# Record metrics for activation request
+	start_time = time.time()
+	kms_version = get_kms_version(version)
+	
+	try:
+		response = messagehandler.executeRequestLogic()
+		
+		# Get product and SKU from parsed data (set by serverLogic)
+		app_name = srv_config.get('_metrics_app_name', 'unknown')
+		sku_name = srv_config.get('_metrics_sku_name', 'unknown')
+		
+		# Determine product type from application name
+		product = get_product_type(app_name)
+		
+		# Get SKU label based on detail level
+		sku_label = get_sku_label(sku_name, app_name)
+		
+		# Record successful activation request metrics
+		duration = time.time() - start_time
+		record_activation_request("success", product, kms_version, duration, sku=sku_label)
+		
+		return response
+	except Exception as e:
+		# Get product and SKU from parsed data (set by serverLogic) - even on failure
+		app_name = srv_config.get('_metrics_app_name', 'unknown')
+		sku_name = srv_config.get('_metrics_sku_name', 'unknown')
+		product = get_product_type(app_name)
+		sku_label = get_sku_label(sku_name, app_name)
+		
+		# Record failed activation request metrics
+		duration = time.time() - start_time
+		record_activation_request("failure", product, kms_version, duration, sku=sku_label)
+		
+		# Re-raise the original exception
+		raise
