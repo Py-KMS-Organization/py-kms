@@ -51,10 +51,13 @@ def sql_initialize(dbName):
                                 cur.execute("INSERT OR REPLACE INTO metadata (key, value) VALUES ('schema_version', '1');")
                                 loggersrv.info("Database schema updated to version 1.")
                         if current_version < 2:
+                                # v2: Recreate "clients" table with new schema with updated PK to faciliate multiple SKUs per clientMachineId and applicationId.
                                 loggersrv.info("Upgrading database schema to version 2...")
+                                con.commit()
                                 cur.execute("BEGIN IMMEDIATE")
+                                cur.execute("ALTER TABLE clients RENAME TO clients_old;")
                                 cur.execute("""
-                                CREATE TABLE clients_new (
+                                CREATE TABLE clients (
                                         clientMachineId TEXT,
                                         machineName TEXT,
                                         applicationId TEXT,
@@ -69,12 +72,11 @@ def sql_initialize(dbName):
                                 """)
 
                                 cur.execute("""
-                                INSERT INTO clients_new
-                                SELECT * FROM clients
+                                INSERT INTO clients
+                                SELECT * FROM clients_old
                                 """)
 
-                                cur.execute("DROP TABLE clients")
-                                cur.execute("ALTER TABLE clients_new RENAME TO clients")
+                                cur.execute("DROP TABLE clients_old")
 
                                 cur.execute("""
                                 INSERT OR REPLACE INTO metadata (key, value)
