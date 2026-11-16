@@ -71,9 +71,20 @@ def sql_initialize(dbName):
                                 )
                                 """)
 
+                                # Handle duplicates by keeping only the most recent entry for each (clientMachineId, applicationId, skuId) combination.
                                 cur.execute("""
                                 INSERT INTO clients
-                                SELECT * FROM clients_old
+                                SELECT *
+                                FROM clients_old AS c
+                                WHERE rowid = (
+                                        SELECT rowid
+                                        FROM clients_old AS c2
+                                        WHERE c2.clientMachineId IS c.clientMachineId
+                                        AND c2.applicationId IS c.applicationId
+                                        AND c2.skuId IS c.skuId
+                                        ORDER BY c2.lastRequestTime DESC, c2.rowid DESC
+                                        LIMIT 1
+                                )
                                 """)
 
                                 cur.execute("DROP TABLE clients_old")
