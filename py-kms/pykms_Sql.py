@@ -52,7 +52,7 @@ def sql_initialize(dbName):
                                 loggersrv.info("Database schema updated to version 1.")
                         if current_version < 2:
                                 loggersrv.info("Upgrading database schema to version 2...")
-
+                                cur.execute("BEGIN IMMEDIATE")
                                 cur.execute("""
                                 CREATE TABLE clients_new (
                                         clientMachineId TEXT,
