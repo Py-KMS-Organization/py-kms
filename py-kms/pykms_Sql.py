@@ -27,7 +27,7 @@ def sql_initialize(dbName):
                 loggersrv.debug(f'Initializing database file "{dbName}"...')
                 with sqlite3.connect(dbName) as con:
                         cur = con.cursor()
-                        cur.execute("CREATE TABLE clients(clientMachineId TEXT, machineName TEXT, applicationId TEXT, skuId TEXT, licenseStatus TEXT, lastRequestTime INTEGER, kmsEpid TEXT, requestCount INTEGER, PRIMARY KEY(clientMachineId, applicationId))")
+                        cur.execute("CREATE TABLE clients(clientMachineId TEXT, machineName TEXT, applicationId TEXT, skuId TEXT, licenseStatus TEXT, lastRequestTime INTEGER, kmsEpid TEXT, requestCount INTEGER, PRIMARY KEY(clientMachineId, applicationId, skuId))")
 
         if os.path.isfile(dbName):
                 # Update database
@@ -50,7 +50,51 @@ def sql_initialize(dbName):
                                 cur.execute("ALTER TABLE clients ADD COLUMN lastRequestIP TEXT;")
                                 cur.execute("INSERT OR REPLACE INTO metadata (key, value) VALUES ('schema_version', '1');")
                                 loggersrv.info("Database schema updated to version 1.")
+                        if current_version < 2:
+                                # v2: Recreate "clients" table with new schema with updated PK to faciliate multiple SKUs per clientMachineId and applicationId.
+                                loggersrv.info("Upgrading database schema to version 2...")
+                                con.commit()
+                                cur.execute("BEGIN IMMEDIATE")
+                                cur.execute("ALTER TABLE clients RENAME TO clients_old;")
+                                cur.execute("""
+                                CREATE TABLE clients (
+                                        clientMachineId TEXT,
+                                        machineName TEXT,
+                                        applicationId TEXT,
+                                        skuId TEXT,
+                                        licenseStatus TEXT,
+                                        lastRequestTime INTEGER,
+                                        kmsEpid TEXT,
+                                        requestCount INTEGER,
+                                        lastRequestIP TEXT,
+                                        PRIMARY KEY(clientMachineId, applicationId, skuId)
+                                )
+                                """)
 
+                                # Handle duplicates by keeping only the most recent entry for each (clientMachineId, applicationId, skuId) combination.
+                                cur.execute("""
+                                INSERT INTO clients
+                                SELECT *
+                                FROM clients_old AS c
+                                WHERE rowid = (
+                                        SELECT rowid
+                                        FROM clients_old AS c2
+                                        WHERE c2.clientMachineId IS c.clientMachineId
+                                        AND c2.applicationId IS c.applicationId
+                                        AND c2.skuId IS c.skuId
+                                        ORDER BY c2.lastRequestTime DESC, c2.rowid DESC
+                                        LIMIT 1
+                                )
+                                """)
+
+                                cur.execute("DROP TABLE clients_old")
+
+                                cur.execute("""
+                                INSERT OR REPLACE INTO metadata (key, value)
+                                VALUES ('schema_version', '2')
+                                """)
+
+                                loggersrv.info("Database schema updated to version 2.")
 
 def sql_get_all(dbName):
         if available is False:
@@ -88,7 +132,7 @@ def sql_update(dbName, infoDict):
         with sqlite3.connect(dbName) as con:
                 con.row_factory = sqlite3.Row
                 cur = con.cursor()
-                cur.execute(f"SELECT {', '.join(_column_names)} FROM clients WHERE clientMachineId=:clientMachineId AND applicationId=:applicationId;", infoDict)
+                cur.execute(f"SELECT {', '.join(_column_names)} FROM clients WHERE clientMachineId=:clientMachineId AND applicationId=:applicationId AND skuId=:skuId;", infoDict)
                 data = cur.fetchone()
                 if not data:
                         # Insert new row with all given info
@@ -99,18 +143,18 @@ def sql_update(dbName, infoDict):
 
                 else:
                         # Update only changed columns
-                        common_postfix = "WHERE clientMachineId=:clientMachineId AND applicationId=:applicationId"
+                        common_postfix = "WHERE clientMachineId=:clientMachineId AND applicationId=:applicationId AND skuId=:skuId"
                         def update_column_if_changed(column_name, new_value):
                                 assert "clientMachineId" in infoDict and "applicationId" in infoDict, "infoDict must contain 'clientMachineId' and 'applicationId'"
                                 if column_name not in _column_names:
                                         raise ValueError(f"Unknown column name: {column_name}")
                                 if data[column_name] != new_value:
                                         query = f"UPDATE clients SET {column_name}=:value {common_postfix}"
-                                        cur.execute(query, {"value": new_value, "clientMachineId": infoDict['clientMachineId'], "applicationId": infoDict['applicationId']})
+                                        cur.execute(query, {"value": new_value, "clientMachineId": infoDict['clientMachineId'], "applicationId": infoDict['applicationId'], "skuId": infoDict['skuId']})
 
                         # Dynamically check and maybe update all columns
                         for column_name in _column_names:
-                                if column_name in ["clientMachineId", "applicationId", "requestCount"]:
+                                if column_name in ["clientMachineId", "applicationId", "skuId", "requestCount"]:
                                         continue  # Skip these columns
                                 if column_name == "kmsEpid":
                                         # this one can only be updated by the special function
@@ -120,12 +164,12 @@ def sql_update(dbName, infoDict):
                         # Finally increment requestCount
                         cur.execute(f"UPDATE clients SET requestCount=requestCount+1 {common_postfix}", infoDict)
 
-def sql_update_epid(dbName, kmsRequest, response, appName):
+def sql_update_epid(dbName, kmsRequest, response, appName, skuName):
         if available is False:
                 return
 
         cmid = str(kmsRequest['clientMachineId'].get())
         with sqlite3.connect(dbName) as con:
                 cur = con.cursor()
-                cur.execute("UPDATE clients SET kmsEpid=? WHERE clientMachineId=? AND applicationId=?;",
-                        (str(response["kmsEpid"].decode('utf-16le')), cmid, appName))
+                cur.execute("UPDATE clients SET kmsEpid=? WHERE clientMachineId=? AND applicationId=? AND skuId=?;",
+                        (str(response["kmsEpid"].decode('utf-16le')), cmid, appName, skuName))
