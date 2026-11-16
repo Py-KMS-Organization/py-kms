@@ -137,7 +137,7 @@ def sql_update(dbName, infoDict):
                                         raise ValueError(f"Unknown column name: {column_name}")
                                 if data[column_name] != new_value:
                                         query = f"UPDATE clients SET {column_name}=:value {common_postfix}"
-                                        cur.execute(query, {"value": new_value, "clientMachineId": infoDict['clientMachineId'], "applicationId": infoDict['applicationId']})
+                                        cur.execute(query, {"value": new_value, "clientMachineId": infoDict['clientMachineId'], "applicationId": infoDict['applicationId'], "skuId": infoDict['skuId']})
 
                         # Dynamically check and maybe update all columns
                         for column_name in _column_names:
